@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: alloy
+  namespace: monitoring
+  labels:
+    k8s-app: alloy
+    kubernetes.io/cluster-service: "true"
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 10%
+  selector:
+    matchLabels:
+      k8s-app: alloy
+  template:
+    metadata:
+      labels:
+        k8s-app: alloy
+      annotations:
+        prometheus.io/port: "12345"
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+    spec:
+      priorityClassName: system-node-critical
+      hostNetwork: true
+      dnsPolicy: Default
+      tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
+      - effect: "NoExecute"
+        operator: "Exists"
+      - effect: "NoSchedule"
+        operator: "Exists"
+      containers:
+      - name: alloy
+        image: grafana/alloy:v1.8.3
+        resources:
+          requests:
+            cpu: 500m
+            memory: 256Mi
+        args: [ "run", "/etc/alloy/config.alloy", "--storage.path=/var/lib/alloy/data", "--server.http.listen-addr=0.0.0.0:12345"]
+        ports:
+        - containerPort: 4319
+          name: gRPC
+          protocol: TCP
+        - containerPort: 4318
+          name: HTTP
+          protocol: TCP
+        - containerPort: 12345
+          name: METRICS
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 12345
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /healthy
+            port: 12345
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          failureThreshold: 3
+        volumeMounts:
+        - mountPath: /etc/alloy/config.alloy
+          name: alloy-config
+      volumes:
+      - name: alloy-config
+        configMap: 
+          name: alloy-configmap
