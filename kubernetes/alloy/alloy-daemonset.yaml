@@ -4,7 +4,7 @@ metadata:
   name: alloy
   namespace: monitoring
   labels:
-    k8s-app: alloy
+    app: alloy
     kubernetes.io/cluster-service: "true"
 spec:
   updateStrategy:
@@ -12,11 +12,11 @@ spec:
       maxUnavailable: 10%
   selector:
     matchLabels:
-      k8s-app: alloy
+      app: alloy
   template:
     metadata:
       labels:
-        k8s-app: alloy
+        app: alloy
       annotations:
         prometheus.io/port: "12345"
         prometheus.io/scrape: "true"
@@ -42,9 +42,11 @@ spec:
         args: [ "run", "/etc/alloy/config.alloy", "--storage.path=/var/lib/alloy/data", "--server.http.listen-addr=0.0.0.0:12345"]
         ports:
         - containerPort: 4319
+          hostPort: 4319
           name: gRPC
           protocol: TCP
         - containerPort: 4318
+          hostPort: 4318
           name: HTTP
           protocol: TCP
         - containerPort: 12345

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: distributor
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: distributor
+  template:
+    metadata:
+      labels:
+        app: distributor
+        system: tempo
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: general
+      containers:
+      - name: distributor
+        image: grafana/tempo:latest
+        ports:
+        - containerPort: 7946
+          name: memberlist
+        - containerPort: 4317
+          name: grpc
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+          requests:
+            cpu: 700m
+            memory: 768Mi
+        volumeMounts:
+        - mountPath: /etc/tempo.yaml
+          name: tempo-config
+      volumes:
+      - name: tempo-config
+        configMap: 
+          name: tempo-configmap

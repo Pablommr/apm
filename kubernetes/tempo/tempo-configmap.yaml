@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-configmap
+  namespace: monitoring
+data:
+  tempo.yaml: |
+    memberlist:
+      abort_if_cluster_join_fails: false
+      bind_port: 7946
+      join_members:
+      - ingester-service:7946
+      - metrics-generator-service:7946
+      
+    distributor:
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: "0.0.0.0:4317"
