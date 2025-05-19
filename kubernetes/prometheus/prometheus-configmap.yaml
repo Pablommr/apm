@@ -45,3 +45,16 @@ data:
         target_label: __address__
         regex: (.+)(?::\d+);(\d+)
         replacement: $1:$2
+    - job_name: 'metrics-generator'
+      scrape_interval: 30s
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: metrics-generator-service
+      - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+        action: replace
+        target_label: __address__
+        regex: (.+)(?::\d+);(\d+)
+        replacement: $1:$2
