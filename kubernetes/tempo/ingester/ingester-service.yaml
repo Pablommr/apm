@@ -3,6 +3,10 @@ kind: Service
 metadata:
   name: ingester-service
   namespace: monitoring
+  annotations:
+    prometheus.io/port: "3200"
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
 spec:
   selector:
     app: ingester

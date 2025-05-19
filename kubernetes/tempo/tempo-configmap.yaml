@@ -5,6 +5,9 @@ metadata:
   namespace: monitoring
 data:
   tempo.yaml: |
+    server:
+      http_listen_port: 3200
+
     memberlist:
       abort_if_cluster_join_fails: false
       bind_port: 7946
