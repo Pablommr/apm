@@ -21,6 +21,8 @@ spec:
         args: [ "-target=query-frontend", "-config.file=/etc/tempo.yaml" ]
         image: grafana/tempo:latest
         ports:
+        - containerPort: 3200
+          name: frontend
         - containerPort: 9095
           name: qf-port
         resources:
