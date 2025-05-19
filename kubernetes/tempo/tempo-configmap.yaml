@@ -35,6 +35,10 @@ data:
       traces_storage:
         path: /var/tempo/generator/traces
 
+    querier:
+      frontend_worker:
+        frontend_address: query-frontend-service:9095
+
     storage:
       trace:
         backend: s3

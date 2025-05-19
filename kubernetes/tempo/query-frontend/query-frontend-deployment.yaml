@@ -1,34 +1,34 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: metrics-generator
+  name: query-frontend
   namespace: monitoring
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: metrics-generator
+      app: query-frontend
   template:
     metadata:
       labels:
-        app: metrics-generator
+        app: query-frontend
         system: tempo
     spec:
       nodeSelector:
         karpenter.sh/nodepool: general
       containers:
-      - name: metrics-generator
-        args: [ "-target=metrics-generator", "-config.file=/etc/tempo.yaml" ]
+      - name: query-frontend
+        args: [ "-target=query-frontend", "-config.file=/etc/tempo.yaml" ]
         image: grafana/tempo:latest
         ports:
-        - containerPort: 7946
-          name: memberlist
+        - containerPort: 9095
+          name: qf-port
         resources:
           limits:
-            cpu: 1000m
+            cpu: 300m
             memory: 1024Mi
           requests:
-            cpu: 700m
+            cpu: 200m
             memory: 768Mi
         volumeMounts:
         - mountPath: /etc/tempo.yaml
