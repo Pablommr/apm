@@ -18,6 +18,7 @@ spec:
         karpenter.sh/nodepool: general
       containers:
       - name: distributor
+        args: [ "-target=distributor", "-config.file=/etc/tempo.yaml" ]
         image: grafana/tempo:latest
         ports:
         - containerPort: 7946
@@ -34,6 +35,7 @@ spec:
         volumeMounts:
         - mountPath: /etc/tempo.yaml
           name: tempo-config
+          subPath: tempo.yaml
       volumes:
       - name: tempo-config
         configMap: 

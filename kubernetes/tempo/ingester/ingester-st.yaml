@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ingester
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: ingester
+  serviceName: "ingester"
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        karpenter.sh/do-not-disrupt: "true"
+      labels:
+        app: ingester
+        system: tempo
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    app: ingester
+                topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        karpenter.sh/nodepool: general # Fix to general-ondemand
+      containers:
+      - name: ingester
+        args: [ "-target=ingester", "-config.file=/etc/tempo.yaml" ]
+        image: grafana/tempo:latest
+        ports:
+        - containerPort: 7946
+          name: memberlist
+        resources:
+          limits:
+            cpu: 3000m
+            memory: 8Gi
+        volumeMounts:
+        - mountPath: /etc/tempo.yaml
+          name: tempo-config
+          subPath: tempo.yaml
+      volumes:
+      - name: tempo-config
+        configMap: 
+          name: tempo-configmap

@@ -7,15 +7,15 @@ spec:
   selector:
     app: alloy
   ports:
-    - name: gRPC
+    - name: grpc
       protocol: TCP
       port: 4319
-      targetPort: gRPC
-    - name: HTTP
+      targetPort: grpc
+    - name: http
       protocol: TCP
       port: 4318
-      targetPort: HTTP
-    - name: METRICS
+      targetPort: http
+    - name: metrics
       protocol: TCP
       port: 12345
-      targetPort: METRICS
+      targetPort: metrics

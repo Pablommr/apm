@@ -43,14 +43,14 @@ spec:
         ports:
         - containerPort: 4319
           hostPort: 4319
-          name: gRPC
+          name: grpc
           protocol: TCP
         - containerPort: 4318
           hostPort: 4318
-          name: HTTP
+          name: http
           protocol: TCP
         - containerPort: 12345
-          name: METRICS
+          name: metrics
           protocol: TCP
         readinessProbe:
           httpGet:
@@ -69,6 +69,7 @@ spec:
         volumeMounts:
         - mountPath: /etc/alloy/config.alloy
           name: alloy-config
+          subPath: config.alloy
       volumes:
       - name: alloy-config
         configMap: 

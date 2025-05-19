@@ -1,17 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: distributor-service
+  name: ingester-service
   namespace: monitoring
 spec:
   selector:
-    app: distributor
+    app: ingester
   ports:
     - name: memberlist
       protocol: TCP
       port: 7946
       targetPort: 7946
-    - name: grpc
-      protocol: TCP
-      port: 4317
-      targetPort: grpc
