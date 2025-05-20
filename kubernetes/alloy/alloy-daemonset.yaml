@@ -37,8 +37,8 @@ spec:
             memory: 256Mi
         args: [ "run", "/etc/alloy/config.alloy", "--storage.path=/var/lib/alloy/data", "--server.http.listen-addr=0.0.0.0:12345"]
         ports:
-        - containerPort: 4319
-          hostPort: 4319
+        - containerPort: 4317
+          hostPort: 4317
           name: grpc
           protocol: TCP
         - containerPort: 4318

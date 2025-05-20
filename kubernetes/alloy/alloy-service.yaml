@@ -13,7 +13,7 @@ spec:
   ports:
     - name: grpc
       protocol: TCP
-      port: 4319
+      port: 4317
       targetPort: grpc
     - name: http
       protocol: TCP
