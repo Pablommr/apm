@@ -18,9 +18,10 @@ spec:
       labels:
         app: alloy
     spec:
+      serviceAccountName: alloy-sa
       priorityClassName: system-node-critical
       hostNetwork: true
-      dnsPolicy: Default
+      dnsPolicy: ClusterFirstWithHostNet
       tolerations:
       - key: "CriticalAddonsOnly"
         operator: "Exists"
