@@ -1,19 +1,31 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: metrics-generator
   namespace: monitoring
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: metrics-generator
+  serviceName: "metrics-generator"
+  replicas: 1
   template:
     metadata:
+      annotations:
+        karpenter.sh/do-not-disrupt: "true"
       labels:
         app: metrics-generator
         system: tempo
     spec:
+      securityContext:
+        runAsUser: 0
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    app: metrics-generator
+                topologyKey: kubernetes.io/hostname
       nodeSelector:
         karpenter.sh/nodepool: general
       containers:
@@ -26,15 +38,23 @@ spec:
         resources:
           limits:
             cpu: 1000m
-            memory: 1024Mi
-          requests:
-            cpu: 700m
-            memory: 768Mi
+            memory: 1Gi
         volumeMounts:
         - mountPath: /etc/tempo.yaml
           name: tempo-config
           subPath: tempo.yaml
+        - mountPath: /var/tempo/generator/wal
+          name: tempo-wal
       volumes:
       - name: tempo-config
         configMap: 
           name: tempo-configmap
+  volumeClaimTemplates:
+  - metadata:
+      name: tempo-wal
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 30Gi
+      storageClassName: "gp2"

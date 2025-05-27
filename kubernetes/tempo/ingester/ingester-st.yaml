@@ -17,6 +17,8 @@ spec:
         app: ingester
         system: tempo
     spec:
+      securityContext:
+        runAsUser: 0
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -41,7 +43,18 @@ spec:
         - mountPath: /etc/tempo.yaml
           name: tempo-config
           subPath: tempo.yaml
+        - mountPath: /var/tempo/wal
+          name: tempo-wal
       volumes:
       - name: tempo-config
         configMap: 
           name: tempo-configmap
+  volumeClaimTemplates:
+  - metadata:
+      name: tempo-wal
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 30Gi
+      storageClassName: "gp2"

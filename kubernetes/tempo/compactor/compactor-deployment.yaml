@@ -1,31 +1,43 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: querier
+  name: compactor
   namespace: monitoring
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: querier
+      app: compactor
   template:
     metadata:
       labels:
-        app: querier
+        app: compactor
         system: tempo
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    app: compactor
+                topologyKey: kubernetes.io/hostname
       nodeSelector:
         karpenter.sh/nodepool: general
       containers:
-      - name: querier
-        args: [ "-target=querier", "-config.file=/etc/tempo.yaml" ]
+      - name: compactor
+        args: [ "-target=compactor", "-config.file=/etc/tempo.yaml" ]
         image: grafana/tempo:latest
+        ports:
+        - containerPort: 7946
+          name: memberlist
+        - containerPort: 4317
+          name: grpc
         resources:
           limits:
-            cpu: 300m
+            cpu: 1000m
             memory: 6Gi
           requests:
-            cpu: 200m
+            cpu: 700m
             memory: 6Gi
         volumeMounts:
         - mountPath: /etc/tempo.yaml

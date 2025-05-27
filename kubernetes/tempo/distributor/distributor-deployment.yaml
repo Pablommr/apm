@@ -34,11 +34,11 @@ spec:
           name: grpc
         resources:
           limits:
-            cpu: 1000m
-            memory: 1024Mi
+            cpu: 2000m
+            memory: 2Gi
           requests:
-            cpu: 700m
-            memory: 768Mi
+            cpu: 1700m
+            memory: 2Gi
         volumeMounts:
         - mountPath: /etc/tempo.yaml
           name: tempo-config

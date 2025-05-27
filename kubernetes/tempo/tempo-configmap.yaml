@@ -7,6 +7,8 @@ data:
   tempo.yaml: |
     server:
       http_listen_port: 3200
+      log_format: json
+      log_level: warn
 
     memberlist:
       abort_if_cluster_join_fails: false
@@ -14,6 +16,8 @@ data:
       join_members:
       - ingester-service:7946
       - metrics-generator-service:7946
+      - distributor-service:7946
+      - compactor-service:7946
       
     distributor:
       receivers:
@@ -25,10 +29,6 @@ data:
               endpoint: "0.0.0.0:4318"
 
     metrics_generator:
-      registry:
-        external_labels:
-          source: tempo
-          cluster: docker-compose
       storage:
         path: /var/tempo/generator/wal
         remote_write:
