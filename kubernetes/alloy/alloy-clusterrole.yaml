@@ -1,8 +1,41 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: alloy-k8sattributes-cr
+  name: grafana-alloy-agent-cr
 rules:
+  # Permissões para descoberta de serviços (discovery.kubernetes)
   - apiGroups: [""]
-    resources: ["pods"]
+    resources:
+      - pods
+      - services
+      - endpoints
+      - nodes
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"] # Para EndpointSlices (Kubernetes 1.19+)
+    resources:
+      - endpointslices
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - namespaces # Para descobrir namespaces e seus metadados
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources:
+      - replicasets
+      - deployments
+      - daemonsets
+      - statefulsets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["policy"]
+    resources:
+      - poddisruptionbudgets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
     verbs: ["get", "list", "watch"]

@@ -31,7 +31,7 @@ spec:
         operator: "Exists"
       containers:
       - name: alloy
-        image: grafana/alloy:v1.8.3
+        image: grafana/alloy:v1.9.1
         resources:
           requests:
             cpu: 500m
@@ -67,7 +67,32 @@ spec:
         - mountPath: /etc/alloy/config.alloy
           name: alloy-config
           subPath: config.alloy
+        - mountPath: /host/proc
+          name: proc
+          readOnly: true
+        - mountPath: /host/sys
+          name: sys
+          readOnly: true
+        - mountPath: /host/rootfs
+          name: rootfs
+          readOnly: true
+        - mountPath: /run/containerd/containerd.sock # Ou /var/run/docker.sock
+          name: containerd-socket # Ou docker-socket
+          readOnly: true
       volumes:
       - name: alloy-config
         configMap: 
           name: alloy-configmap
+      - name: proc
+        hostPath:
+          path: /proc
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: rootfs
+        hostPath:
+          path: /
+      - name: containerd-socket
+        hostPath:
+          path: /run/containerd/containerd.sock # Caminho real do socket
+          type: Socket

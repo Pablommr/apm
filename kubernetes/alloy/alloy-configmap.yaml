@@ -76,7 +76,34 @@ data:
       }
     }
 
+    // Coleta métricas de Node
+    prometheus.exporter.unix "node_metrics_collector" {}
+
+    // Realiza o scrape
+    prometheus.scrape "scrape" {
+      targets    = prometheus.exporter.unix.node_metrics_collector.targets
+      forward_to = [prometheus.relabel.add_new_labels.receiver]
+    }
+
+    // Adiciona novas labels
+    prometheus.relabel "add_new_labels" {
+      forward_to = [prometheus.remote_write.prometheus_tempo.receiver]
+
+      rule {
+        action = "replace"
+        target_label = "cluster_name"
+        replacement = "my_cluster"
+      }
+    }
+
+    // Componente de escrita remota para o backend (Mimir/Prometheus)
+    prometheus.remote_write "prometheus_tempo" {
+      endpoint {
+        url = "http://prometheus-tempo-service:9090/api/v1/write"
+      }
+    }
+
     logging {
-      level  = "warn"
+      level  = "debug"
       format = "json"
     }
