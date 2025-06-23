@@ -19,6 +19,7 @@ spec:
         app: alloy
     spec:
       serviceAccountName: alloy-sa
+      hostPID: true
       priorityClassName: system-node-critical
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -76,6 +77,9 @@ spec:
         - mountPath: /host/rootfs
           name: rootfs
           readOnly: true
+        - name: run-udev-data
+          mountPath: /run/udev/data
+          readOnly: true
         - mountPath: /run/containerd/containerd.sock # Ou /var/run/docker.sock
           name: containerd-socket # Ou docker-socket
           readOnly: true
@@ -92,6 +96,10 @@ spec:
       - name: rootfs
         hostPath:
           path: /
+      - name: run-udev-data
+        hostPath:
+          path: /run/udev/data
+          type: DirectoryOrCreate
       - name: containerd-socket
         hostPath:
           path: /run/containerd/containerd.sock # Caminho real do socket

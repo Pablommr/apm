@@ -3,7 +3,7 @@ kind: ClusterRole
 metadata:
  labels:
    app.kubernetes.io/component: statefulset
-   app.kubernetes.io/name: prometheus-tempo
+   app.kubernetes.io/name: prometheus-metrics
  name: prom-tempo-cr
  namespace: monitoring
 rules:

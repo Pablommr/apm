@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus-metrics
+  namespace: monitoring
+spec:
+  serviceName: prometheus-metrics
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-metrics
+  template:
+    metadata:
+      labels:
+        app: prometheus-metrics
+    spec:
+      serviceAccountName: prometheus-metrics-sa
+      nodeSelector:
+        karpenter.sh/nodepool: general
+      restartPolicy: "Always"
+      securityContext:
+        runAsUser: 0
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v3.4.1
+        resources:
+          limits:
+            cpu: 230m
+            memory: 1024Mi
+          requests:
+            cpu: 200m
+            memory: 896Mi
+        args:
+          - --config.file=/etc/prometheus/prometheus.yml
+          - --web.enable-remote-write-receiver
+          - --enable-feature=exemplar-storage
+          - --enable-feature=native-histograms
+          - --storage.tsdb.retention.time=90d
+          - --log.level=error
+        ports:
+        - containerPort: 9090
+          protocol: TCP
+          name: prom-port
+        volumeMounts:
+        - mountPath: /prometheus
+          name: prometheus-data
+        - mountPath: /etc/prometheus/prometheus.yml
+          name: prometheus-config
+          subPath: "prometheus.yml"
+      volumes:
+      - name: prometheus-data
+        persistentVolumeClaim:
+          claimName: prometheus-metrics-data-pvc
+      - name: prometheus-config
+        configMap: 
+          name: prometheus-metrics-configmap

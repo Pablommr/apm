@@ -3,7 +3,7 @@
     metadata:
      labels:
        app.kubernetes.io/component: statefulset
-       app.kubernetes.io/name: prometheus-tempo
+       app.kubernetes.io/name: prometheus-metrics
      name: prom-tempo-crb
      namespace: monitoring
     roleRef:
@@ -12,5 +12,5 @@
      name: prom-tempo-cr
     subjects:
      - kind: ServiceAccount
-       name: prometheus-tempo-sa
+       name: prometheus-metrics-sa
        namespace: monitoring

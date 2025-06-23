@@ -87,23 +87,23 @@ data:
 
     // Adiciona novas labels
     prometheus.relabel "add_new_labels" {
-      forward_to = [prometheus.remote_write.prometheus_tempo.receiver]
+      forward_to = [prometheus.remote_write.prometheus_metrics.receiver]
 
       rule {
         action = "replace"
         target_label = "cluster_name"
-        replacement = "my_cluster"
+        replacement = ""
       }
     }
 
-    // Componente de escrita remota para o backend (Mimir/Prometheus)
-    prometheus.remote_write "prometheus_tempo" {
+    // Componente de escrita remota para o Prometheus Metrics
+    prometheus.remote_write "prometheus_metrics" {
       endpoint {
-        url = "http://prometheus-tempo-service:9090/api/v1/write"
+        url = "http://prometheus-metrics-service:9090/api/v1/write"
       }
     }
 
     logging {
-      level  = "debug"
+      level  = "warn"
       format = "json"
     }
