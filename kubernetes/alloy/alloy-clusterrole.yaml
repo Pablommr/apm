@@ -39,3 +39,10 @@ rules:
     resources:
       - ingresses
     verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - nodes/metrics
+      - nodes/proxy
+      - nodes/stats
+      - nodes/spec # Pode ser útil para informações adicionais do nó
+    verbs: ["get", "list", "watch"]

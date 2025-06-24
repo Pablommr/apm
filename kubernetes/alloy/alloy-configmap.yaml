@@ -5,6 +5,7 @@ metadata:
   namespace: monitoring
 data:
   config.alloy: |-
+    // Listening do Alloy
     otelcol.receiver.otlp "otlp_receiver" {
       grpc {
         endpoint = "0.0.0.0:4317"
@@ -23,6 +24,7 @@ data:
       }
     }
 
+    // Envio de métricas do APM
     otelcol.exporter.otlp "grafana_tempo" {
       client {
         endpoint = "distributor-service:4317"
@@ -38,6 +40,7 @@ data:
       }
     }
 
+    // Metadata para o APM
     otelcol.processor.k8sattributes "grafana_tempo" {
       auth_type = "serviceAccount"
       wait_for_metadata = true
@@ -66,6 +69,7 @@ data:
       }
     }
 
+    // Queue para ser enviada para o APM
     otelcol.processor.memory_limiter "grafana_tempo" {
       check_interval = "3s"
       limit          = "256MiB"
@@ -76,14 +80,63 @@ data:
       }
     }
 
+    ////////////////////////////////////////////////////////////////////////
+
     // Coleta métricas de Node
     prometheus.exporter.unix "node_metrics_collector" {}
 
-    // Realiza o scrape
-    prometheus.scrape "scrape" {
+    // Realiza o scrape nas métricas de nodes
+    prometheus.scrape "metrics_node" {
       targets    = prometheus.exporter.unix.node_metrics_collector.targets
       forward_to = [prometheus.relabel.add_new_labels.receiver]
     }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    // Métricas do Kubernetes
+    discovery.kubernetes "pod" {
+      role = "pod"
+      
+        selectors {
+          role = "pod"
+          field = "spec.nodeName=" + coalesce(sys.env("HOSTNAME"), constants.hostname)
+        }
+      }
+
+    // Realiza o scrape no kubernetes
+    prometheus.scrape "pod" {
+      targets    = discovery.kubernetes.pod.targets
+      forward_to = [prometheus.relabel.add_new_labels.receiver]
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    // Métricas do Kubelet
+    discovery.kubelet "k8s_kubelet" {
+      bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+      tls_config {
+        insecure_skip_verify = true
+      }
+    }
+
+    // Realiza o scrape no kubelet
+    prometheus.scrape "kubelet" {
+      targets    = discovery.kubelet.k8s_kubelet.targets
+      forward_to = [prometheus.relabel.add_new_labels.receiver]
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    // Métricas de pod através do cadvisor
+    prometheus.exporter.cadvisor "pod_metrics" {}
+
+    // Realiza o scrape nas métricas de cadvisor
+    prometheus.scrape "cadvisor_scrape" {
+      targets    = prometheus.exporter.cadvisor.pod_metrics.targets
+      forward_to = [prometheus.relabel.add_new_labels.receiver]
+    }
+
+    ////////////////////////////////////////////////////////////////////////
 
     // Adiciona novas labels
     prometheus.relabel "add_new_labels" {
@@ -103,6 +156,7 @@ data:
       }
     }
 
+    // Log level do Alloy
     logging {
       level  = "warn"
       format = "json"

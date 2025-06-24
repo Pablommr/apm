@@ -35,8 +35,8 @@ spec:
         image: grafana/alloy:v1.9.1
         resources:
           requests:
-            cpu: 500m
-            memory: 256Mi
+            cpu: 300m
+            memory: 512Mi
         args: [ "run", "/etc/alloy/config.alloy", "--storage.path=/var/lib/alloy/data", "--server.http.listen-addr=0.0.0.0:12345"]
         ports:
         - containerPort: 4317
