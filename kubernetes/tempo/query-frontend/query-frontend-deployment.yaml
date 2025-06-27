@@ -25,6 +25,8 @@ spec:
           name: frontend
         - containerPort: 9095
           name: qf-port
+        - containerPort: 7946
+          name: memberlist
         resources:
           limits:
             cpu: 300m

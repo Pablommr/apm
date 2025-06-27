@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo-gossip
+  namespace: monitoring
+spec:
+  clusterIP: None
+  ports:
+  - name: gossip
+    port: 7946
+    targetPort: 7946
+  selector:
+    system: tempo

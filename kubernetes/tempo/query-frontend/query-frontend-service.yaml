@@ -19,3 +19,7 @@ spec:
       protocol: TCP
       port: 9095
       targetPort: 9095
+    - name: memberlist
+      protocol: TCP
+      port: 7946
+      targetPort: 7946

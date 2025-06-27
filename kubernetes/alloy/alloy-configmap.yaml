@@ -108,7 +108,7 @@ data:
       rule {
         action = "replace"
         target_label = "cluster_name"
-        replacement = ""
+        replacement = "iugu-core-131"
       }
 
       forward_to = [prometheus.remote_write.prometheus_metrics.receiver]

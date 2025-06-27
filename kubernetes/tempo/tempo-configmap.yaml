@@ -14,12 +14,19 @@ data:
       abort_if_cluster_join_fails: false
       bind_port: 7946
       join_members:
-      - ingester-service:7946
-      - metrics-generator-service:7946
-      - distributor-service:7946
-      - compactor-service:7946
-      
+      - tempo-gossip.monitoring.svc.cluster.local:7946
+
+    ingester:
+      lifecycler:
+        ring:
+          kvstore:
+            store: memberlist
+          replication_factor: 1 # Defina para 1 se você só tem 1 réplica. Aumente se tiver mais.      
+
     distributor:
+      ring:
+        kvstore:
+          store: memberlist
       receivers:
         otlp:
           protocols:
@@ -40,6 +47,13 @@ data:
     querier:
       frontend_worker:
         frontend_address: query-frontend-service:9095
+
+    compactor:
+      compaction:
+        compaction_window: 1h
+      ring:
+        kvstore:
+          store: memberlist
 
     storage:
       trace:
