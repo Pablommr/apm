@@ -19,24 +19,6 @@ data:
     
       output {
         traces = [otelcol.processor.k8sattributes.grafana_tempo.input]
-        metrics = [otelcol.exporter.otlp.grafana_tempo.input]
-        logs = [otelcol.exporter.otlp.grafana_tempo.input]
-      }
-    }
-
-    // Envio de métricas do APM
-    otelcol.exporter.otlp "grafana_tempo" {
-      client {
-        endpoint = "distributor-service:4317"
-        tls {
-    			insecure = true
-    		}
-      }
-
-      sending_queue {
-        enabled = true
-        num_consumers = 20
-        queue_size = 3000
       }
     }
 
@@ -80,6 +62,21 @@ data:
       }
     }
 
+    // Envio de métricas do APM
+    otelcol.exporter.otlp "grafana_tempo" {
+      client {
+        endpoint = "distributor-service:4317"
+        tls {
+    			insecure = true
+    		}
+      }
+
+      sending_queue {
+        enabled = true
+        num_consumers = 20
+        queue_size = 3000
+      }
+    }
     ////////////////////////////////////////////////////////////////////////
 
     // Coleta métricas de Node
@@ -88,65 +85,33 @@ data:
     // Realiza o scrape nas métricas de nodes
     prometheus.scrape "metrics_node" {
       targets    = prometheus.exporter.unix.node_metrics_collector.targets
-      forward_to = [prometheus.relabel.add_new_labels.receiver]
+      forward_to = [prometheus.relabel.general_labels.receiver]
     }
 
     ////////////////////////////////////////////////////////////////////////
 
-    // Métricas do Kubernetes
-    discovery.kubernetes "pod" {
-      role = "pod"
-      
-        selectors {
-          role = "pod"
-          field = "spec.nodeName=" + coalesce(sys.env("HOSTNAME"), constants.hostname)
-        }
-      }
+    // Coleta métricas de Pod
+    prometheus.exporter.cadvisor "cadvisor" {}
 
-    // Realiza o scrape no kubernetes
-    prometheus.scrape "pod" {
-      targets    = discovery.kubernetes.pod.targets
-      forward_to = [prometheus.relabel.add_new_labels.receiver]
+    // Realiza o scrape nas métricas de pods
+    prometheus.scrape "metrics_pods" {
+      targets    = prometheus.exporter.cadvisor.cadvisor.targets
+      forward_to = [prometheus.relabel.general_labels.receiver]
     }
 
     ////////////////////////////////////////////////////////////////////////
-
-    // Métricas do Kubelet
-    discovery.kubelet "k8s_kubelet" {
-      bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-      tls_config {
-        insecure_skip_verify = true
-      }
-    }
-
-    // Realiza o scrape no kubelet
-    prometheus.scrape "kubelet" {
-      targets    = discovery.kubelet.k8s_kubelet.targets
-      forward_to = [prometheus.relabel.add_new_labels.receiver]
-    }
-
+    ////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
-    // Métricas de pod através do cadvisor
-    prometheus.exporter.cadvisor "pod_metrics" {}
-
-    // Realiza o scrape nas métricas de cadvisor
-    prometheus.scrape "cadvisor_scrape" {
-      targets    = prometheus.exporter.cadvisor.pod_metrics.targets
-      forward_to = [prometheus.relabel.add_new_labels.receiver]
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-
-    // Adiciona novas labels
-    prometheus.relabel "add_new_labels" {
-      forward_to = [prometheus.remote_write.prometheus_metrics.receiver]
-
+    // Adiciona labels do Kubernetes. Todas as outras prometheus.relabel devem redirecionar para aqui
+    prometheus.relabel "general_labels" {
       rule {
         action = "replace"
         target_label = "cluster_name"
         replacement = ""
       }
+
+      forward_to = [prometheus.remote_write.prometheus_metrics.receiver]
     }
 
     // Componente de escrita remota para o Prometheus Metrics
@@ -160,4 +125,9 @@ data:
     logging {
       level  = "warn"
       format = "json"
+    }
+
+    // Debug no frontend
+    livedebugging {
+      enabled = true
     }

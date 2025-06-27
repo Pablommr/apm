@@ -64,17 +64,19 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 15
           failureThreshold: 3
+        securityContext:
+          privileged: true
         volumeMounts:
         - mountPath: /etc/alloy/config.alloy
           name: alloy-config
           subPath: config.alloy
-        - mountPath: /host/proc
+        - mountPath: /proc
           name: proc
           readOnly: true
-        - mountPath: /host/sys
+        - mountPath: /sys
           name: sys
           readOnly: true
-        - mountPath: /host/rootfs
+        - mountPath: /rootfs
           name: rootfs
           readOnly: true
         - name: run-udev-data
@@ -82,6 +84,12 @@ spec:
           readOnly: true
         - mountPath: /run/containerd/containerd.sock # Ou /var/run/docker.sock
           name: containerd-socket # Ou docker-socket
+          readOnly: true
+        - mountPath: /dev
+          name: dev
+          readOnly: true
+        - mountPath: /var/lib/kubelet
+          name: var-lib-kubelet
           readOnly: true
       volumes:
       - name: alloy-config
@@ -102,5 +110,11 @@ spec:
           type: DirectoryOrCreate
       - name: containerd-socket
         hostPath:
-          path: /run/containerd/containerd.sock # Caminho real do socket
+          path: /run/containerd/containerd.sock
           type: Socket
+      - name: dev
+        hostPath:
+          path: /dev
+      - name: var-lib-kubelet # Essencial para o Kubelet
+        hostPath:
+          path: /var/lib/kubelet
