@@ -26,15 +26,13 @@ spec:
           limits:
             cpu: 230m
             memory: 1024Mi
-          requests:
-            cpu: 200m
-            memory: 896Mi
         args:
           - --config.file=/etc/prometheus/prometheus.yml
           - --web.enable-remote-write-receiver
           - --enable-feature=exemplar-storage
           - --enable-feature=native-histograms
           - --storage.tsdb.retention.time=30d
+          - --log.format=json
           - --log.level=error
         ports:
         - containerPort: 9090

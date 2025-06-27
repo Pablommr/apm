@@ -32,7 +32,7 @@ spec:
         operator: "Exists"
       containers:
       - name: alloy
-        image: grafana/alloy:v1.9.1
+        image: 729788631164.dkr.ecr.sa-east-1.amazonaws.com/grafana:alloy-v1.9.1
         resources:
           requests:
             cpu: 300m
@@ -52,18 +52,22 @@ spec:
           protocol: TCP
         readinessProbe:
           httpGet:
-            path: /ready
+            path: /-/ready
             port: 12345
           initialDelaySeconds: 5
-          periodSeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
           failureThreshold: 3
         livenessProbe:
           httpGet:
-            path: /healthy
+            path: /-/healthy
             port: 12345
           initialDelaySeconds: 10
-          periodSeconds: 15
-          failureThreshold: 3
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
         securityContext:
           privileged: true
         volumeMounts:
@@ -87,9 +91,6 @@ spec:
           readOnly: true
         - mountPath: /dev
           name: dev
-          readOnly: true
-        - mountPath: /var/lib/kubelet
-          name: var-lib-kubelet
           readOnly: true
       volumes:
       - name: alloy-config
@@ -115,6 +116,3 @@ spec:
       - name: dev
         hostPath:
           path: /dev
-      - name: var-lib-kubelet # Essencial para o Kubelet
-        hostPath:
-          path: /var/lib/kubelet
