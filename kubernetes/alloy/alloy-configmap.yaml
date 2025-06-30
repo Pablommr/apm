@@ -79,12 +79,49 @@ data:
     }
     ////////////////////////////////////////////////////////////////////////
 
+    // Descobrir os nós do Kubernetes.
+    discovery.kubernetes "k8s_nodes" {
+        role = "node"
+    }
+
     // Coleta métricas de Node
     prometheus.exporter.unix "node_metrics_collector" {}
 
+    // Relabel adress
+    discovery.relabel "relabel_adress" {
+      targets = discovery.kubernetes.k8s_nodes.targets
+
+      // Regra para manter apenas o alvo cujo nome do nó corresponde à variável de ambiente.
+      rule {
+        action        = "keep"
+        source_labels = ["__meta_kubernetes_node_name"]
+        regex         = env("HOSTNAME")
+      }
+
+      // Transforma as meta-labels de node em labels permanentes
+      rule {
+        action  = "labelmap"
+        // Este regex encontra todas as labels que começam com '__meta_kubernetes_node_label_'
+        // e captura (a parte em parênteses) todo o resto do nome da label.
+        regex   = "__meta_kubernetes_node_label_(.+)"
+        // A ação labelmap então cria uma nova label usando o texto capturado ($1)
+        // e atribui a ela o valor da label original.
+      }
+
+      rule {
+        action       = "replace"
+        source_labels = ["__address__"]
+        target_label = "__address__"
+        replacement  = "alloy.internal:12345"
+      }
+    }
+
     // Realiza o scrape nas métricas de nodes
     prometheus.scrape "metrics_node" {
-      targets    = prometheus.exporter.unix.node_metrics_collector.targets
+      targets = discovery.relabel.relabel_adress.output
+
+      metrics_path = "/api/v0/component/prometheus.exporter.unix.node_metrics_collector/metrics"
+
       forward_to = [prometheus.relabel.general_labels.receiver]
     }
 
