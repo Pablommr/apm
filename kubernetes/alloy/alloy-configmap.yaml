@@ -128,11 +128,23 @@ data:
     ////////////////////////////////////////////////////////////////////////
 
     // Coleta métricas de Pod
-    prometheus.exporter.cadvisor "cadvisor" {}
-
+    prometheus.exporter.cadvisor "cadvisor" {
+      enabled_metrics = ["app","cpu","cpuLoad","percpu","memory","oom_event"]
+    }
+    
     // Realiza o scrape nas métricas de pods
     prometheus.scrape "metrics_pods" {
       targets    = prometheus.exporter.cadvisor.cadvisor.targets
+      forward_to = [prometheus.relabel.keep_pod_metrics.receiver]
+    }
+
+    prometheus.relabel "keep_pod_metrics" {
+      rule {
+        action        = "keep"
+        source_labels = ["id"]
+        regex         = "/kubepods.slice/.+"
+      }
+
       forward_to = [prometheus.relabel.general_labels.receiver]
     }
 
@@ -145,7 +157,7 @@ data:
       rule {
         action = "replace"
         target_label = "cluster_name"
-        replacement = "iugu-core-131"
+        replacement = ""
       }
 
       forward_to = [prometheus.remote_write.prometheus_metrics.receiver]

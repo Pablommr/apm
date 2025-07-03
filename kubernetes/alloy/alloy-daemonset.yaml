@@ -32,7 +32,7 @@ spec:
         operator: "Exists"
       containers:
       - name: alloy
-        image: 729788631164.dkr.ecr.sa-east-1.amazonaws.com/grafana:alloy-v1.9.1
+        image: grafana/alloy:v1.9.2
         resources:
           requests:
             cpu: 300m
