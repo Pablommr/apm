@@ -129,7 +129,7 @@ data:
 
     // Coleta métricas de Pod
     prometheus.exporter.cadvisor "cadvisor" {
-      enabled_metrics = ["app","cpu","cpuLoad","percpu","memory","oom_event"]
+      enabled_metrics = ["app","cpu","cpuLoad","percpu","memory","oom_event","diskIO","disk","network"]
     }
     
     // Realiza o scrape nas métricas de pods
@@ -143,6 +143,12 @@ data:
         action        = "keep"
         source_labels = ["id"]
         regex         = "/kubepods.slice/.+"
+      }
+
+      rule {
+        action        = "keep"
+        source_labels = ["image"]
+        regex         = ".+"
       }
 
       forward_to = [prometheus.relabel.general_labels.receiver]
