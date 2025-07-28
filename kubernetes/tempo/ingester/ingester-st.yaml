@@ -8,7 +8,7 @@ spec:
     matchLabels:
       app: ingester
   serviceName: "ingester"
-  replicas: 1
+  replicas: 3
   template:
     metadata:
       annotations:
@@ -37,8 +37,8 @@ spec:
           name: memberlist
         resources:
           limits:
-            cpu: 3000m
-            memory: 8Gi
+            cpu: 1000m
+            memory: 4Gi
         volumeMounts:
         - mountPath: /etc/tempo.yaml
           name: tempo-config

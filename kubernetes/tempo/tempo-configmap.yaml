@@ -21,7 +21,7 @@ data:
         ring:
           kvstore:
             store: memberlist
-          replication_factor: 1 # Defina para 1 se você só tem 1 réplica. Aumente se tiver mais.      
+          replication_factor: 3 # Defina para 1 se você só tem 1 réplica. Aumente se tiver mais.      
 
     distributor:
       ring:
@@ -50,7 +50,7 @@ data:
 
     compactor:
       compaction:
-        compaction_window: 1h
+        compaction_window: 30m
       ring:
         kvstore:
           store: memberlist
@@ -64,6 +64,15 @@ data:
           endpoint: s3.us-east-1.amazonaws.com
           access_key: ""
           secret_key: ""
+        cache: "redis-tempo"
+        
+    cache:
+      - name: "redis-tempo"
+        redis:
+          endpoint: ""
+          password: ""
+          db: 0
+          expiration: 72h
 
     overrides:
       defaults:
