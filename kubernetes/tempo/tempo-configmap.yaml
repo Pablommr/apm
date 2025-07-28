@@ -64,15 +64,20 @@ data:
           endpoint: s3.us-east-1.amazonaws.com
           access_key: ""
           secret_key: ""
-        cache: "redis-tempo"
         
     cache:
-      - name: "redis-tempo"
-        redis:
-          endpoint: ""
-          password: ""
-          db: 0
-          expiration: 72h
+      caches:
+        - redis:
+            endpoint: "redis-tempo.39qob1.ng.0001.use1.cache.amazonaws.com:6379"
+            password: ""
+            db: 0
+            expiration: 72h
+          roles:
+            - bloom
+            - trace-id-index
+            - parquet-footer
+            - frontend-search
+            - parquet-page
 
     overrides:
       defaults:
