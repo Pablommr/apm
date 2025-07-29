@@ -27,6 +27,14 @@ spec:
           name: qf-port
         - containerPort: 7946
           name: memberlist
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: frontend
+          initialDelaySeconds: 45
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
         resources:
           limits:
             cpu: 300m

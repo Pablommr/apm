@@ -59,7 +59,7 @@ data:
       trace:
         backend: s3
         s3:
-          bucket: ""
+          bucket: "apm-tempo-core"
           region: "us-east-1"
           endpoint: s3.us-east-1.amazonaws.com
           access_key: ""

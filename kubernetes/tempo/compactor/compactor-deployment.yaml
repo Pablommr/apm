@@ -32,6 +32,16 @@ spec:
           name: memberlist
         - containerPort: 4317
           name: grpc
+        - containerPort: 3200
+          name: http-metrics
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: http-metrics
+          initialDelaySeconds: 45
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
         resources:
           limits:
             cpu: 1000m
