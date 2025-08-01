@@ -32,8 +32,12 @@ spec:
         operator: "Exists"
       containers:
       - name: alloy
-        image: grafana/alloy:v1.9.2
-        args: [ "run", "/etc/alloy/config.alloy", "--storage.path=/var/lib/alloy/data", "--server.http.listen-addr=0.0.0.0:12345"]
+        image: grafana/alloy:v1.10.0
+        args: 
+          - "run"
+          - "/etc/alloy/config.alloy"
+          - "--storage.path=/var/lib/alloy/data"
+          - "--server.http.listen-addr=0.0.0.0:12345"
         ports:
         - containerPort: 4317
           hostPort: 4317
@@ -50,26 +54,26 @@ spec:
           httpGet:
             path: /-/ready
             port: 12345
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          successThreshold: 1
-          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /-/healthy
             port: 12345
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 3
+          initialDelaySeconds: 15
+          periodSeconds: 15
         securityContext:
-          privileged: true
+          readOnlyRootFilesystem: true
+          capabilities:
+            add: ["SYS_PTRACE"]
         volumeMounts:
         - mountPath: /etc/alloy/config.alloy
           name: alloy-config
           subPath: config.alloy
+        - name: alloy-data
+          mountPath: /var/lib/alloy/data
+        - name: tmp
+          mountPath: /tmp
         - mountPath: /proc
           name: proc
           readOnly: true
@@ -82,16 +86,19 @@ spec:
         - name: run-udev-data
           mountPath: /run/udev/data
           readOnly: true
-        - mountPath: /run/containerd/containerd.sock # Ou /var/run/docker.sock
-          name: containerd-socket # Ou docker-socket
+        - mountPath: /run/containerd/containerd.sock
+          name: containerd-socket
           readOnly: true
         - mountPath: /dev
           name: dev
-          readOnly: true
       volumes:
       - name: alloy-config
         configMap: 
           name: alloy-configmap
+      - name: alloy-data
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
       - name: proc
         hostPath:
           path: /proc

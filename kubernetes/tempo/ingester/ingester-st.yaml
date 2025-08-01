@@ -31,7 +31,7 @@ spec:
       containers:
       - name: ingester
         args: [ "-target=ingester", "-config.file=/etc/tempo.yaml" ]
-        image: grafana/tempo:latest
+        image: pablommr/grafana-tempo:v2.8.1
         ports:
         - containerPort: 7946
           name: memberlist
