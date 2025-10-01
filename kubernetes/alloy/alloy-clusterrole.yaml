@@ -3,10 +3,11 @@ kind: ClusterRole
 metadata:
   name: grafana-alloy-agent-cr
 rules:
-  # Permissões para descoberta de serviços (discovery.kubernetes)
+  # Permissões para descoberta e coleta de logs
   - apiGroups: [""]
     resources:
       - pods
+      - pods/log
       - services
       - endpoints
       - nodes

@@ -84,7 +84,7 @@ data:
         role = "node"
     }
 
-    // Coleta métricas de Node
+    // Coleta métricas de Node. Expõe o endpoint para realizar o scrape
     prometheus.exporter.unix "node_metrics_collector" {}
 
     // Relabel adress
@@ -155,6 +155,121 @@ data:
     }
 
     ////////////////////////////////////////////////////////////////////////
+
+    // Loki
+    discovery.kubernetes "pods" {
+      role = "pod"
+    }
+    
+    discovery.relabel "pod_logs" {
+      targets = discovery.kubernetes.pods.targets
+
+      // Essential K8s Labels (add/remove as needed)
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        action        = "replace"
+        target_label  = "namespace"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        action        = "replace"
+        target_label  = "container"
+      }
+
+      // Adiciona o nome do nó como uma label temporária
+      rule {
+        source_labels = ["__meta_kubernetes_pod_node_name"]
+        action        = "replace"
+        target_label  = "node_name"
+      }
+
+      // Adiciona o "dono" do pod (Deployment, StatefulSet, etc.) como label temporária
+      rule {
+        source_labels = ["__meta_kubernetes_pod_owner"]
+        action        = "replace"
+        target_label  = "pod_owner"
+      }
+
+      // Adiciona o IP do Pod como label temporária
+      rule {
+        source_labels = ["__meta_kubernetes_pod_ip"]
+        action        = "replace"
+        target_label  = "pod_ip"
+      }
+
+      rule {
+        action = "replace"
+        target_label = "cluster_name"
+        replacement = ""
+      }
+    }
+
+    loki.source.kubernetes "pods" {
+      targets    = discovery.relabel.pod_logs.output
+      forward_to = [loki.process.add_k8s_metadata.receiver]
+    }
+
+    // Transforma labels em metadados
+    loki.process "add_k8s_metadata" {
+      // O stage.pack cria um novo log em formato JSON
+      stage.pack {
+        // Especifica quais labels devem ser adicionadas como campos no novo JSON.
+        labels = ["node_name", "pod_owner", "pod_ip"]
+
+        // O log original será colocado dentro de uma chave chamada "log".
+        ingest_timestamp = false // Vamos manter o timestamp original do log
+      }
+
+      // Envia os logs processados para o próximo estágio (seu filtro de health checks)
+      forward_to = [loki.process.filter_health_checks.receiver]
+    }
+
+    // Remove logs de healthckecks
+    loki.process "filter_health_checks" {
+      // Estágio 1: Analisa a linha de log como JSON.
+      stage.json {
+        expressions = {
+          nested_agent = "log.details.headers.\"user-agent\"",
+          root_agent   = "log.agent",
+        }
+      }
+
+      // Estágio 2: Cria um novo campo unificado 'effective_agent'.
+      // A função 'coalesce' retorna o primeiro valor não vazio da lista.
+      stage.template {
+        source   = "effective_agent"
+        template = "{{ coalesce .nested_agent .root_agent }}"
+      }
+
+      // Estágio 3: Descarta o log com base no campo unificado.
+      stage.drop {
+        // A fonte agora é o campo que criamos no estágio anterior.
+        source     = "effective_agent"
+        expression = ".*(ELB-HealthChecker|kube-probe).*"
+        drop_counter_reason = "health_check"
+      }
+
+      forward_to = [loki.relabel.remove_default.receiver]
+    }
+
+    loki.relabel "remove_default" {
+      rule {
+        action = "labeldrop"
+        regex  = "instance|service_name|job"
+      }
+
+      forward_to = [loki.write.loki_cluster.receiver]
+    }
+
+    loki.write "loki_cluster" {
+      endpoint {
+        url = "http://loki-gateway.loki.svc.cluster.local/loki/api/v1/push"
+        tenant_id = "fake"
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
 
@@ -178,7 +293,7 @@ data:
 
     // Log level do Alloy
     logging {
-      level  = "warn"
+      level  = "error"
       format = "json"
     }
 

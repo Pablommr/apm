@@ -32,8 +32,15 @@ spec:
         operator: "Exists"
       containers:
       - name: alloy
-        image: grafana/alloy:v1.10.0
-        args: 
+        image: grafana/alloy:v1.10.2
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        args:
           - "run"
           - "/etc/alloy/config.alloy"
           - "--storage.path=/var/lib/alloy/data"
@@ -96,7 +103,9 @@ spec:
         configMap: 
           name: alloy-configmap
       - name: alloy-data
-        emptyDir: {}
+        hostPath:
+          path: /var/lib/alloy/data
+          type: DirectoryOrCreate
       - name: tmp
         emptyDir: {}
       - name: proc

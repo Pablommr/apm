@@ -1,0 +1,139 @@
+loki:
+  server:
+    log_level: warn
+    log_format: json
+
+  ui:
+    enabled: true
+
+  schemaConfig:
+    configs:
+    - from: "2024-04-01"
+      store: tsdb
+      object_store: s3
+      schema: v13
+      index:
+        prefix: loki_index_
+        period: 24h
+
+  storage:
+    type: s3
+    bucketNames:
+      chunks: ""
+      ruler: ""
+      admin: ""
+    s3:
+      region: us-east-1
+      s3forcepathstyle: false
+
+  ingester:
+     chunk_encoding: snappy
+     replication_factor: 3 # Mudar conforme quantidade de pods no Statefulset
+  
+  pattern_ingester:
+     enabled: true
+  
+  limits_config:
+    ingestion_rate_mb: 100
+    ingestion_burst_size_mb: 200
+    allow_structured_metadata: true
+    volume_enabled: true
+    retention_period: 72h
+
+  compactor:
+    retention_enabled: true
+    delete_request_store: s3
+
+  ruler:
+    enable_api: true
+
+  querier:
+    max_concurrent: 4
+
+serviceAccount:
+  create: true
+  annotations:
+    "eks.amazonaws.com/role-arn": "arn:aws:iam:::role/LokiServiceAccountRole"
+
+deploymentMode: Distributed
+
+ingester:
+  replicas: 3
+  zoneAwareReplication:
+    enabled: false
+  nodeSelector:
+    karpenter.sh/nodepool: general #On-demand em prod
+  podAnnotations:
+    karpenter.sh/do-not-disrupt: "true"
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: loki
+              app.kubernetes.io/component: ingester
+          topologyKey: "kubernetes.io/hostname"
+
+compactor:
+  replicas: 1
+  nodeSelector:
+    karpenter.sh/nodepool: general #On-demand em prod
+  podAnnotations:
+    karpenter.sh/do-not-disrupt: "true"
+
+distributor:
+  replicas: 3
+  maxUnavailable: 2
+  nodeSelector:
+    karpenter.sh/nodepool: general
+  podAnnotations:
+    karpenter.sh/do-not-disrupt: "true"
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: loki
+              app.kubernetes.io/component: distributor
+          topologyKey: "kubernetes.io/hostname"
+
+querier:
+  replicas: 3
+  maxUnavailable: 2
+  nodeSelector:
+    karpenter.sh/nodepool: general
+
+queryFrontend:
+  replicas: 2
+  maxUnavailable: 1
+  nodeSelector:
+    karpenter.sh/nodepool: general
+
+queryScheduler:
+  replicas: 2
+  nodeSelector:
+    karpenter.sh/nodepool: general
+
+indexGateway:
+  replicas: 2
+  maxUnavailable: 1
+  nodeSelector:
+    karpenter.sh/nodepool: general
+
+ruler:
+  replicas: 1
+  maxUnavailable: 1
+  nodeSelector:
+    karpenter.sh/nodepool: general
+
+# Desabilitando componentes não utilizados no modo distribuído
+minio:
+  enabled: false
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+singleBinary:
+  replicas: 0

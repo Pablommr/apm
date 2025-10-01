@@ -68,7 +68,7 @@ data:
     cache:
       caches:
         - redis:
-            endpoint: "redis-tempo.39qob1.ng.0001.use1.cache.amazonaws.com:6379"
+            endpoint: ""
             password: ""
             db: 0
             expiration: 72h
