@@ -160,9 +160,34 @@ data:
     discovery.kubernetes "pods" {
       role = "pod"
     }
+
+    // Remove logs indesejados
+    discovery.relabel "drop_pod_logs" {
+      targets = discovery.kubernetes.pods.targets
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_controller_name"]
+        action        = "drop"
+        regex         = "loki-canary"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_controller_name"]
+        action        = "drop"
+        regex         = "loki-gateway-.*"
+      }
+
+    }
     
     discovery.relabel "pod_logs" {
-      targets = discovery.kubernetes.pods.targets
+      targets = discovery.relabel.drop_pod_logs.output
+
+      // Label essencial para linkar com o Grafana Tempo
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        action        = "replace"
+        target_label  = "service_name"
+      }
 
       // Essential K8s Labels (add/remove as needed)
       rule {
@@ -230,7 +255,7 @@ data:
       rule {
         action = "replace"
         target_label = "cluster_name"
-        replacement = "CLUSTER_NAME"
+        replacement = ""
       }
     }
 
@@ -295,7 +320,7 @@ data:
     loki.relabel "remove_labels" {
       rule {
         action = "labeldrop"
-        regex  = "pod_name|container_name|image|pod_phase|pod_reasy|node_name|pod_owner|instance|service_name|job"
+        regex  = "pod_name|container_name|image|pod_phase|pod_ready|node_name|pod_owner|instance|job"
       }
 
       forward_to = [loki.write.loki_cluster.receiver]
@@ -317,7 +342,7 @@ data:
       rule {
         action = "replace"
         target_label = "cluster_name"
-        replacement = "CLUSTER_NAME"
+        replacement = ""
       }
 
       forward_to = [prometheus.remote_write.prometheus_metrics.receiver]
