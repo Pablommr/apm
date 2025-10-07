@@ -172,9 +172,45 @@ data:
       }
 
       rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        action        = "replace"
+        target_label  = "pod_name"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_phase"]
+        action        = "replace"
+        target_label  = "pod_phase"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_ready"]
+        action        = "replace"
+        target_label  = "pod_ready"
+      }
+
+      rule {
         source_labels = ["__meta_kubernetes_pod_container_name"]
         action        = "replace"
-        target_label  = "container"
+        target_label  = "container_name"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_image"]
+        action        = "replace"
+        target_label  = "image"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_controller_kind"]
+        action        = "replace"
+        target_label  = "controller_kind"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_controller_name"]
+        action        = "replace"
+        target_label  = "controller_name"
       }
 
       // Adiciona o nome do nó como uma label temporária
@@ -191,17 +227,10 @@ data:
         target_label  = "pod_owner"
       }
 
-      // Adiciona o IP do Pod como label temporária
-      rule {
-        source_labels = ["__meta_kubernetes_pod_ip"]
-        action        = "replace"
-        target_label  = "pod_ip"
-      }
-
       rule {
         action = "replace"
         target_label = "cluster_name"
-        replacement = ""
+        replacement = "CLUSTER_NAME"
       }
     }
 
@@ -215,13 +244,23 @@ data:
       // O stage.pack cria um novo log em formato JSON
       stage.pack {
         // Especifica quais labels devem ser adicionadas como campos no novo JSON.
-        labels = ["node_name", "pod_owner", "pod_ip"]
+        labels = ["pod_name","pod_phase","pod_ready","container_name","image","controller_kind","controller_name","node_name","pod_owner"]
 
         // O log original será colocado dentro de uma chave chamada "log".
         ingest_timestamp = false // Vamos manter o timestamp original do log
       }
 
       // Envia os logs processados para o próximo estágio (seu filtro de health checks)
+      forward_to = [loki.process.parse_internal_json.receiver]
+    }
+
+    // Analisa o conteúdo do campo "log" como JSON
+    loki.process "parse_internal_json" {
+      stage.json {
+        source       = "log" // Diz para o estágio olhar dentro do campo "log"
+        expressions  = { level = "level", message = "message" } // Extrai "level" e "message"
+      }
+
       forward_to = [loki.process.filter_health_checks.receiver]
     }
 
@@ -250,13 +289,13 @@ data:
         drop_counter_reason = "health_check"
       }
 
-      forward_to = [loki.relabel.remove_default.receiver]
+      forward_to = [loki.relabel.remove_labels.receiver]
     }
 
-    loki.relabel "remove_default" {
+    loki.relabel "remove_labels" {
       rule {
         action = "labeldrop"
-        regex  = "instance|service_name|job"
+        regex  = "pod_name|container_name|image|pod_phase|pod_reasy|node_name|pod_owner|instance|service_name|job"
       }
 
       forward_to = [loki.write.loki_cluster.receiver]
@@ -278,7 +317,7 @@ data:
       rule {
         action = "replace"
         target_label = "cluster_name"
-        replacement = ""
+        replacement = "CLUSTER_NAME"
       }
 
       forward_to = [prometheus.remote_write.prometheus_metrics.receiver]

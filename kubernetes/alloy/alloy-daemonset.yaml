@@ -5,7 +5,7 @@ metadata:
   namespace: monitoring
   labels:
     app: alloy
-    kubernetes.io/cluster-service: "true"
+    kubernetes.io/cluster-service: 'true'
 spec:
   updateStrategy:
     rollingUpdate:
@@ -23,108 +23,110 @@ spec:
       priorityClassName: system-node-critical
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      terminationGracePeriodSeconds: 60
       tolerations:
-      - key: "CriticalAddonsOnly"
-        operator: "Exists"
-      - effect: "NoExecute"
-        operator: "Exists"
-      - effect: "NoSchedule"
-        operator: "Exists"
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
       containers:
-      - name: alloy
-        image: grafana/alloy:v1.10.2
-        resources:
-          requests:
-            cpu: 200m
-            memory: 512Mi
-          limits:
-            cpu: 500m
-            memory: 1Gi
-        args:
-          - "run"
-          - "/etc/alloy/config.alloy"
-          - "--storage.path=/var/lib/alloy/data"
-          - "--server.http.listen-addr=0.0.0.0:12345"
-        ports:
-        - containerPort: 4317
-          hostPort: 4317
-          name: grpc
-          protocol: TCP
-        - containerPort: 4318
-          hostPort: 4318
-          name: http
-          protocol: TCP
-        - containerPort: 12345
-          name: metrics
-          protocol: TCP
-        readinessProbe:
-          httpGet:
-            path: /-/ready
-            port: 12345
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /-/healthy
-            port: 12345
-          initialDelaySeconds: 35
-          periodSeconds: 15
-        securityContext:
-          readOnlyRootFilesystem: true
-          capabilities:
-            add: ["SYS_PTRACE"]
-        volumeMounts:
-        - mountPath: /etc/alloy/config.alloy
-          name: alloy-config
-          subPath: config.alloy
-        - name: alloy-data
-          mountPath: /var/lib/alloy/data
-        - name: tmp
-          mountPath: /tmp
-        - mountPath: /proc
-          name: proc
-          readOnly: true
-        - mountPath: /sys
-          name: sys
-          readOnly: true
-        - mountPath: /rootfs
-          name: rootfs
-          readOnly: true
-        - name: run-udev-data
-          mountPath: /run/udev/data
-          readOnly: true
-        - mountPath: /run/containerd/containerd.sock
-          name: containerd-socket
-          readOnly: true
-        - mountPath: /dev
-          name: dev
+        - name: alloy
+          image: grafana/alloy:v1.11.0
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          args:
+            - run
+            - /etc/alloy/config.alloy
+            - --storage.path=/var/lib/alloy/data
+            - --server.http.listen-addr=0.0.0.0:12345
+          ports:
+            - containerPort: 4317
+              hostPort: 4317
+              name: grpc
+              protocol: TCP
+            - containerPort: 4318
+              hostPort: 4318
+              name: http
+              protocol: TCP
+            - containerPort: 12345
+              name: metrics
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 12345
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 12345
+            initialDelaySeconds: 35
+            periodSeconds: 15
+          securityContext:
+            readOnlyRootFilesystem: true
+            capabilities:
+              add:
+                - SYS_PTRACE
+          volumeMounts:
+            - mountPath: /etc/alloy/config.alloy
+              name: alloy-config
+              subPath: config.alloy
+            - name: alloy-data
+              mountPath: /var/lib/alloy/data
+            - name: tmp
+              mountPath: /tmp
+            - mountPath: /proc
+              name: proc
+              readOnly: true
+            - mountPath: /sys
+              name: sys
+              readOnly: true
+            - mountPath: /rootfs
+              name: rootfs
+              readOnly: true
+            - name: run-udev-data
+              mountPath: /run/udev/data
+              readOnly: true
+            - mountPath: /run/containerd/containerd.sock
+              name: containerd-socket
+              readOnly: true
+            - mountPath: /dev
+              name: dev
       volumes:
-      - name: alloy-config
-        configMap: 
-          name: alloy-configmap
-      - name: alloy-data
-        hostPath:
-          path: /var/lib/alloy/data
-          type: DirectoryOrCreate
-      - name: tmp
-        emptyDir: {}
-      - name: proc
-        hostPath:
-          path: /proc
-      - name: sys
-        hostPath:
-          path: /sys
-      - name: rootfs
-        hostPath:
-          path: /
-      - name: run-udev-data
-        hostPath:
-          path: /run/udev/data
-          type: DirectoryOrCreate
-      - name: containerd-socket
-        hostPath:
-          path: /run/containerd/containerd.sock
-          type: Socket
-      - name: dev
-        hostPath:
-          path: /dev
+        - name: alloy-config
+          configMap:
+            name: alloy-configmap
+        - name: alloy-data
+          hostPath:
+            path: /var/lib/alloy/data
+            type: DirectoryOrCreate
+        - name: tmp
+          emptyDir: {}
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: rootfs
+          hostPath:
+            path: /
+        - name: run-udev-data
+          hostPath:
+            path: /run/udev/data
+            type: DirectoryOrCreate
+        - name: containerd-socket
+          hostPath:
+            path: /run/containerd/containerd.sock
+            type: Socket
+        - name: dev
+          hostPath:
+            path: /dev
