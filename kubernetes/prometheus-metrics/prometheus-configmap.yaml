@@ -31,15 +31,106 @@ data:
         target_label: __address__
         regex: (.+)(?::\d+);(\d+)
         replacement: $1:$2
-    - job_name: 'loki'
+    - job_name: 'loki-canary'
       scrape_interval: 30s
+      kubernetes_sd_configs:
+      - role: endpoints
       relabel_configs:
-      - target_label: cluster_name
-        replacement: ''
-        action: replace
-      static_configs:
-      - targets: ['loki-query-frontend.loki.svc.cluster.local:3100']
-    - job_name: 'distributor'
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: loki-canary
+      - source_labels: [__address__]
+        action: keep
+        regex: '.*:3500'
+    - job_name: 'loki-compactor'
+      scrape_interval: 30s
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: loki-compactor
+      - source_labels: [__address__]
+        action: keep
+        regex: '.*:3100'
+    - job_name: 'loki-distributor'
+      scrape_interval: 30s
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: loki-distributor
+      - source_labels: [__address__]
+        action: keep
+        regex: '.*:3100'
+    - job_name: 'loki-index-gateway'
+      scrape_interval: 30s
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: loki-index-gateway
+      - source_labels: [__address__]
+        action: keep
+        regex: '.*:3100'
+    - job_name: 'loki-ingester'
+      scrape_interval: 30s
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: loki-ingester
+      - source_labels: [__address__]
+        action: keep
+        regex: '.*:3100'
+    - job_name: 'loki-querier'
+      scrape_interval: 30s
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: loki-querier
+      - source_labels: [__address__]
+        action: keep
+        regex: '.*:3100'
+    - job_name: 'loki-query-frontend'
+      scrape_interval: 30s
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: loki-query-frontend
+      - source_labels: [__address__]
+        action: keep
+        regex: '.*:3100'
+    - job_name: 'loki-query-scheduler'
+      scrape_interval: 30s
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: loki-query-scheduler
+      - source_labels: [__address__]
+        action: keep
+        regex: '.*:3100'
+    - job_name: 'loki-ruler'
+      scrape_interval: 30s
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: loki-ruler
+      - source_labels: [__address__]
+        action: keep
+        regex: '.*:3100'
+    - job_name: 'tempo-distributor'
       scrape_interval: 30s
       kubernetes_sd_configs:
       - role: endpoints
@@ -52,7 +143,7 @@ data:
         target_label: __address__
         regex: (.+)(?::\d+);(\d+)
         replacement: $1:$2
-    - job_name: 'ingester'
+    - job_name: 'tempo-ingester'
       scrape_interval: 30s
       kubernetes_sd_configs:
       - role: endpoints
@@ -65,7 +156,7 @@ data:
         target_label: __address__
         regex: (.+)(?::\d+);(\d+)
         replacement: $1:$2
-    - job_name: 'metrics-generator'
+    - job_name: 'tempo-metrics-generator'
       scrape_interval: 30s
       kubernetes_sd_configs:
       - role: endpoints
@@ -78,7 +169,7 @@ data:
         target_label: __address__
         regex: (.+)(?::\d+);(\d+)
         replacement: $1:$2
-    - job_name: 'querier'
+    - job_name: 'tempo-querier'
       scrape_interval: 30s
       kubernetes_sd_configs:
       - role: endpoints
@@ -91,7 +182,7 @@ data:
         target_label: __address__
         regex: (.+)(?::\d+);(\d+)
         replacement: $1:$2
-    - job_name: 'query-frontend'
+    - job_name: 'tempo-query-frontend'
       scrape_interval: 30s
       kubernetes_sd_configs:
       - role: endpoints
@@ -104,7 +195,7 @@ data:
         target_label: __address__
         regex: (.+)(?::\d+);(\d+)
         replacement: $1:$2
-    - job_name: 'compactor'
+    - job_name: 'tempo-compactor'
       scrape_interval: 30s
       kubernetes_sd_configs:
       - role: endpoints

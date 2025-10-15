@@ -182,9 +182,19 @@ data:
     discovery.relabel "pod_logs" {
       targets = discovery.relabel.drop_pod_logs.output
 
-      // Label essencial para linkar com o Grafana Tempo
+      // Regra 1 (O Fallback): Define o nome do container como o service_name padrão.
+      // Esta regra será executada para todos os pods.
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        action        = "replace"
+        target_label  = "service_name"
+      }
+
+      // Regra 2 (A Prioridade): Se a label 'app' existir, ela sobrescreve o fallback.
+      // O regex "(.+)" garante que esta regra só seja acionada se a label não estiver vazia.
       rule {
         source_labels = ["__meta_kubernetes_pod_label_app"]
+        regex         = "(.+)" 
         action        = "replace"
         target_label  = "service_name"
       }
@@ -261,10 +271,54 @@ data:
 
     loki.source.kubernetes "pods" {
       targets    = discovery.relabel.pod_logs.output
+      forward_to = [loki.process.remove_break_line.receiver]
+    }
+
+    // Remove quebra de linhas no final do log
+    loki.process "remove_break_line" {
+      // Remove última quebra de linha
+      stage.replace {
+        expression = "(\r?\n)$"
+        replace    = ""
+      }
+
+      forward_to = [loki.process.filter_health_checks.receiver]
+    }
+
+    // Remove logs de healthckecks
+    loki.process "filter_health_checks" {
+      // Estágio 1: Analisa o JSON
+      stage.json {
+        expressions = {
+          custom_user_agent_hyphen = "custom.\"user-agent\"",
+          custom_user_agent_underscore = "custom.user_agent",
+          header_user_agent_hyphen = "details.headers.\"user-agent\"",
+          header_user_agent_underscore = "details.headers.user_agent",
+          http_header_agent = "headers.HTTP_USER_AGENT",
+          root_agent   = "agent",
+          root_controller  = "controller",
+        }
+      }
+
+      // Estágio 2: Cria um novo campo unificado 'effective_agent'.
+      // A função 'coalesce' retorna o primeiro valor não vazio da lista.
+      stage.template {
+        source   = "effective_agent"
+        template = "{{ coalesce .custom_user_agent_hyphen .custom_user_agent_underscore .header_user_agent_hyphen .header_user_agent_underscore .http_header_agent .root_agent .root_controller }}"
+      }
+
+      // Estágio 3: Descarta o log com base no campo unificado.
+      stage.drop {
+        // A fonte agora é o campo que criamos no estágio anterior.
+        source     = "effective_agent"
+        expression = ".*(ELB|HealthCheck|kube-probe).*"
+        drop_counter_reason = "health_check"
+      }
+
       forward_to = [loki.process.add_k8s_metadata.receiver]
     }
 
-    // Transforma labels em metadados
+    // O log original será colocado dentro de uma chave chamada "_entry".
     loki.process "add_k8s_metadata" {
       // O stage.pack cria um novo log em formato JSON
       stage.pack {
@@ -276,44 +330,6 @@ data:
       }
 
       // Envia os logs processados para o próximo estágio (seu filtro de health checks)
-      forward_to = [loki.process.parse_internal_json.receiver]
-    }
-
-    // Analisa o conteúdo do campo "log" como JSON
-    loki.process "parse_internal_json" {
-      stage.json {
-        source       = "log" // Diz para o estágio olhar dentro do campo "log"
-        expressions  = { level = "level", message = "message" } // Extrai "level" e "message"
-      }
-
-      forward_to = [loki.process.filter_health_checks.receiver]
-    }
-
-    // Remove logs de healthckecks
-    loki.process "filter_health_checks" {
-      // Estágio 1: Analisa a linha de log como JSON.
-      stage.json {
-        expressions = {
-          nested_agent = "log.details.headers.\"user-agent\"",
-          root_agent   = "log.agent",
-        }
-      }
-
-      // Estágio 2: Cria um novo campo unificado 'effective_agent'.
-      // A função 'coalesce' retorna o primeiro valor não vazio da lista.
-      stage.template {
-        source   = "effective_agent"
-        template = "{{ coalesce .nested_agent .root_agent }}"
-      }
-
-      // Estágio 3: Descarta o log com base no campo unificado.
-      stage.drop {
-        // A fonte agora é o campo que criamos no estágio anterior.
-        source     = "effective_agent"
-        expression = ".*(ELB-HealthChecker|kube-probe).*"
-        drop_counter_reason = "health_check"
-      }
-
       forward_to = [loki.relabel.remove_labels.receiver]
     }
 
