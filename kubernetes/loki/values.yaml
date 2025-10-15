@@ -19,9 +19,9 @@ loki:
   storage:
     type: s3
     bucketNames:
-      chunks: "us-loki-chunk-ig"
-      ruler: "us-loki-ruler-ig"
-      admin: "us-loki-admin-ig"
+      chunks: ""
+      ruler: ""
+      admin: ""
     s3:
       region: us-east-1
       s3forcepathstyle: false
@@ -72,7 +72,7 @@ loki:
 serviceAccount:
   create: true
   annotations:
-    "eks.amazonaws.com/role-arn": "arn:aws:iam::729788631164:role/LokiServiceAccountRole"
+    "eks.amazonaws.com/role-arn": "arn:aws:iam:::role/LokiServiceAccountRole"
 
 deploymentMode: Distributed
 
