@@ -28,7 +28,7 @@ loki:
 
   ingester:
     chunk_encoding: snappy
-    max_chunk_age: 4h
+    max_chunk_age: 24h
     lifecycler:
       ring:
         # 'memberlist' é usado para que os ingesters se descubram

@@ -271,8 +271,19 @@ data:
 
     loki.source.kubernetes "pods" {
       targets    = discovery.relabel.pod_logs.output
+      forward_to = [loki.process.remove_old_logs.receiver]
+    }
+
+    // Ignora logs antigos
+    loki.process "remove_old_logs" {
+      stage.drop {
+        older_than          = "12h" // Configurar conforme reject_old_samples_max_age do Loki
+        drop_counter_reason = "log too old"
+      }
+
       forward_to = [loki.process.remove_break_line.receiver]
     }
+
 
     // Remove quebra de linhas no final do log
     loki.process "remove_break_line" {
