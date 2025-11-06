@@ -161,9 +161,22 @@ data:
       role = "pod"
     }
 
+    // Garante que cada agent do alloy só colete informações de pods que estão em seu próprio node.
+    discovery.relabel "filter_pods_by_node" {
+      targets = discovery.kubernetes.pods.targets
+
+      rule {
+        action        = "keep"
+        source_labels = ["__meta_kubernetes_pod_node_name"]
+        // 'HOSTNAME' deve ser passado para o pod do Alloy
+        // via Downward API ou similar.
+        regex         = env("HOSTNAME")
+      }
+    }
+
     // Remove logs indesejados
     discovery.relabel "drop_pod_logs" {
-      targets = discovery.kubernetes.pods.targets
+      targets = discovery.relabel.filter_pods_by_node.output
 
       rule {
         source_labels = ["__meta_kubernetes_pod_controller_name"]
@@ -271,33 +284,35 @@ data:
 
     loki.source.kubernetes "pods" {
       targets    = discovery.relabel.pod_logs.output
-      forward_to = [loki.process.remove_old_logs.receiver]
+      forward_to = [loki.process.filter_logs.receiver]
     }
 
-    // Ignora logs antigos
-    loki.process "remove_old_logs" {
+    
+    loki.process "filter_logs" {
+      // Ignora logs antigos
       stage.drop {
         older_than          = "12h" // Configurar conforme reject_old_samples_max_age do Loki
         drop_counter_reason = "log too old"
       }
 
-      forward_to = [loki.process.remove_break_line.receiver]
-    }
-
-
-    // Remove quebra de linhas no final do log
-    loki.process "remove_break_line" {
       // Remove última quebra de linha
       stage.replace {
         expression = "(\r?\n)$"
         replace    = ""
       }
 
-      forward_to = [loki.process.filter_health_checks.receiver]
-    }
+      // Formata logs que não estão em formatos JSON
+      stage.replace {
+        // Regex: "Início da linha (^) que NÃO (!) começa com '{',
+        // e capture (.*) tudo até o fim ($)."
+        expression = "^($|[^{].*|.*[^}]$)"
 
-    // Remove logs de healthckecks
-    loki.process "filter_health_checks" {
+        // Substitui a linha inteira pelo JSON,
+        // colocando o grupo capturado ($1) como o valor da chave "log".
+        // NOTA: É preciso escapar as aspas e a barra invertida
+        replace = "{\"log_is_not_in_json\":\"{{ .Value }}\"}"
+      }
+
       // Estágio 1: Analisa o JSON
       stage.json {
         expressions = {
@@ -326,28 +341,28 @@ data:
         drop_counter_reason = "health_check"
       }
 
-      forward_to = [loki.process.add_k8s_metadata.receiver]
-    }
-
-    // O log original será colocado dentro de uma chave chamada "_entry".
-    loki.process "add_k8s_metadata" {
-      // O stage.pack cria um novo log em formato JSON
-      stage.pack {
-        // Especifica quais labels devem ser adicionadas como campos no novo JSON.
-        labels = ["pod_name","pod_phase","pod_ready","container_name","image","controller_kind","controller_name","node_name","pod_owner"]
-
-        // O log original será colocado dentro de uma chave chamada "log".
-        ingest_timestamp = false // Vamos manter o timestamp original do log
+      stage.structured_metadata {
+        values = {
+          "pod_name" = "",
+          "pod_phase" = "",
+          "pod_ready" = "",
+          "container_name" = "",
+          "image" = "",
+          "controller_kind" = "",
+          "controller_name" = "",
+          "node_name" = "",
+          "pod_owner" = "",
+        }
       }
 
-      // Envia os logs processados para o próximo estágio (seu filtro de health checks)
-      forward_to = [loki.relabel.remove_labels.receiver]
+      forward_to = [loki.relabel.keep_essential_labels.receiver]
     }
 
-    loki.relabel "remove_labels" {
+    // Mantém apenas as labels essenciais
+    loki.relabel "keep_essential_labels" {
       rule {
-        action = "labeldrop"
-        regex  = "pod_name|container_name|image|pod_phase|pod_ready|node_name|pod_owner|instance|job"
+        action = "labelkeep"
+        regex  = "cluster_name|namespace|service_name"
       }
 
       forward_to = [loki.write.loki_cluster.receiver]
